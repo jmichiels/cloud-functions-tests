@@ -1,17 +1,29 @@
 package internal
 
 import (
+	"context"
+	firebase "firebase.google.com/go"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"net/http"
 )
 
-func NewHttpHandler() http.Handler {
+func NewHttpHandler(firebaseApp *firebase.App) (http.Handler, error) {
 	root := gin.Default()
-	apiV1 := root.Group("/api/v1")
-	apiV1.GET("/ping", handlePing)
-	apiV1.POST("/hello", handleHello)
-	return root
+	root.GET("/ping", handlePing)
+	root.POST("/hello", handleHello)
+
+	firestoreClt, err := firebaseApp.Firestore(context.Background())
+	if err != nil {
+		return nil, errors.Wrap(err, "get firestore client")
+	}
+	repo := newFirestoreRepository(firestoreClt)
+	srv := newService(repo)
+	rest := newRestApi(srv)
+
+	rest.registerRoutes(root.Group("/api/v1"))
+	return root, nil
 }
 
 type PingResponse struct {
