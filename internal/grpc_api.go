@@ -21,8 +21,8 @@ func newGrpcApi(srv *service) *grpcApi {
 
 // Returns a new bank_v1.BankServiceServer implementation.
 func NewBankServiceServer() bank_v1.BankServiceServer {
-	repo := newMockRepository()
-	service := newService(repo)
+	db := newMockDatabase()
+	service := newService(db)
 	grpcApi := newGrpcApi(service)
 	return grpcApi
 }

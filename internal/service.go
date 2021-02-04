@@ -6,17 +6,17 @@ import (
 )
 
 type service struct {
-	repo database
+	db database
 }
 
-func newService(repo database) *service {
+func newService(db database) *service {
 	return &service{
-		repo: repo,
+		db: db,
 	}
 }
 
 func (srv *service) createClient(client *domain.Client) error {
-	return srv.repo.runTransaction(func(tx transaction) error {
+	return srv.db.runTransaction(func(tx transaction) error {
 		// Check that the client does not already exists.
 		if _, err := tx.getClientById(client.Id); err != errNotFound {
 			if err == nil {
@@ -29,15 +29,15 @@ func (srv *service) createClient(client *domain.Client) error {
 }
 
 func (srv *service) getAllClients() ([]*domain.Client, error) {
-	return srv.repo.getAllClients()
+	return srv.db.getAllClients()
 }
 
 func (srv *service) getClientById(id domain.UniqueId) (*domain.Client, error) {
-	return srv.repo.getClientById(id)
+	return srv.db.getClientById(id)
 }
 
 func (srv *service) createAccount(account *domain.Account) error {
-	return srv.repo.runTransaction(func(tx transaction) error {
+	return srv.db.runTransaction(func(tx transaction) error {
 		// Check that the account does not already exists.
 		if _, err := tx.getAccountById(account.Id); err != errNotFound {
 			if err == nil {
@@ -54,11 +54,11 @@ func (srv *service) createAccount(account *domain.Account) error {
 }
 
 func (srv *service) getAllAccounts() ([]*domain.Account, error) {
-	return srv.repo.getAllAccounts()
+	return srv.db.getAllAccounts()
 }
 
 func (srv *service) getAccountById(id domain.UniqueId) (*domain.Account, error) {
-	return srv.repo.getAccountById(id)
+	return srv.db.getAccountById(id)
 }
 
 func (srv *service) transfer(
@@ -66,7 +66,7 @@ func (srv *service) transfer(
 	originAccountId domain.UniqueId,
 	destinationAccountId domain.UniqueId,
 ) error {
-	return srv.repo.runTransaction(func(tx transaction) error {
+	return srv.db.runTransaction(func(tx transaction) error {
 		// First step: fetch all the data that we need from the repositories.
 		originAccount, err := tx.getAccountById(originAccountId)
 		if err != nil {
