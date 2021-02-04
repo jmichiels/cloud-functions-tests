@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package bank.service.v1;
+
+option go_package = "github.com/jmichiels/cloud-functions-tests/pkg/protos/bank/v1;bank_v1";
+
+message Client {
+  string id = 1;
+  string firstName = 2;
+  string lastName = 3;
+  uint32 age = 4;
+}
+
+//
+// CreateClient
+//
+
+message CreateClientRequest {
+  Client client = 1;
+}
+
+message CreateClientResponse {
+  Client client = 1;
+}
+
+//
+// GetAllClients
+//
+
+message GetAllClientsRequest {
+}
+
+message GetAllClientsResponse {
+  repeated Client clients = 1;
+}
+
+//
+// GetClientById
+//
+
+message GetClientByIdRequest {
+  string id = 1;
+}
+
+message GetClientByIdResponse {
+  Client client = 1;
+}

@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-gcloud functions deploy ServeHTTP --runtime go113 --trigger-http --allow-unauthenticated
+gcloud run deploy --image gcr.io/cloud-functions-tests-45711/cloud-functions-tests --platform managed

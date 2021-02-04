@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package bank.service.v1;
+
+option go_package = "github.com/jmichiels/cloud-functions-tests/pkg/protos/bank/v1;bank_v1";
+
+import "bank/v1/client.proto";
+import "bank/v1/account.proto";
+
+service BankService {
+
+  // Creates a new client.
+  rpc CreateClient(CreateClientRequest) returns (CreateClientResponse);
+  // Returns the list of all clients.
+  rpc GetAllClients(GetAllClientsRequest) returns (GetAllClientsResponse);
+  // Returns a single client.
+  rpc GetClientById(GetClientByIdRequest) returns (GetClientByIdResponse);
+
+  // Creates a new account.
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+  // Returns the list of all accounts.
+  rpc GetAllAccounts(GetAllAccountsRequest) returns (GetAllAccountsResponse);
+  // Returns a single account.
+  rpc GetAccountById(GetAccountByIdRequest) returns (GetAccountByIdResponse);
+
+  // Transfers an amount from one account to another.
+  rpc Transfer(TransferRequest) returns (TransferResponse);
+}
+
+//
+// Transfer
+//
+
+message TransferRequest {
+  string originAccountId = 1;
+  string destinationAccountId = 2;
+  float amountUsd = 3;
+}
+
+message TransferResponse {}

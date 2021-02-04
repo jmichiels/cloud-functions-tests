@@ -15,20 +15,36 @@ func newService(repo repository) *service {
 	}
 }
 
-func (srv *service) storeClient(client *domain.Client) error {
-	return srv.repo.storeClient(client)
+func (srv *service) createClient(client *domain.Client) error {
+	return srv.repo.runTransaction(func(tx transaction) error {
+		// Check that the client does not already exists.
+		if _, err := tx.getClientById(client.Id); err != errNotFound {
+			if err == nil {
+				return errors.New("a client with this id already exists")
+			}
+			return err
+		}
+		return tx.storeClient(client)
+	})
 }
 
 func (srv *service) getAllClients() ([]*domain.Client, error) {
 	return srv.repo.getAllClients()
 }
 
-func (srv *service) GetClientById(id domain.UniqueId) (*domain.Client, error) {
+func (srv *service) getClientById(id domain.UniqueId) (*domain.Client, error) {
 	return srv.repo.getClientById(id)
 }
 
-func (srv *service) storeAccount(account *domain.Account) error {
+func (srv *service) createAccount(account *domain.Account) error {
 	return srv.repo.runTransaction(func(tx transaction) error {
+		// Check that the account does not already exists.
+		if _, err := tx.getAccountById(account.Id); err != errNotFound {
+			if err == nil {
+				return errors.New("a account with this id already exists")
+			}
+			return err
+		}
 		// Check that the client exists (this is not part of the validation done in the domain).
 		if _, err := tx.getClientById(account.ClientId); err != nil {
 			return errors.Wrap(err, "get account client")

@@ -1,6 +1,12 @@
 package internal
 
-import "github.com/jmichiels/cloud-functions-tests/internal/domain"
+import (
+	"errors"
+	"github.com/jmichiels/cloud-functions-tests/internal/domain"
+)
+
+// Returned by the repository when a requested entity is not found.
+var errNotFound = errors.New("not found")
 
 type repository interface {
 	// Starts a transaction with the repository.

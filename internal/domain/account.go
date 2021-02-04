@@ -24,11 +24,11 @@ func (account *Account) Validate() error {
 
 // Transfer transfers money from this Account to another.
 func (account *Account) Transfer(amount Money, to *Account) error {
-	remainingAmount := account.Balance.Subtract(amount)
-	if remainingAmount.IsNegative() {
+	remainingBalance := account.Balance.Subtract(amount)
+	if remainingBalance.IsNegative() {
 		return errors.New("insufficient funds")
 	}
-	account.Balance = remainingAmount
+	account.Balance = remainingBalance
 	to.Balance = to.Balance.Add(amount)
 	return nil
 }
