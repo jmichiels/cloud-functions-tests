@@ -5,22 +5,30 @@ import (
 	"github.com/jmichiels/cloud-functions-tests/internal/domain"
 )
 
-// Returned by the repository when a requested entity is not found.
+// Returned by the database when a requested entity is not found.
 var errNotFound = errors.New("not found")
 
-type repository interface {
-	// Starts a transaction with the repository.
+type database interface {
+	// Starts a transaction with the database.
 	runTransaction(func(tx transaction) error) error
 	transaction
 }
 
 type transaction interface {
+	clientRepository
+	accountRepository
+}
+
+type clientRepository interface {
 	// Persists the client.
 	storeClient(client *domain.Client) error
 	// Returns all the persisted clients.
 	getAllClients() ([]*domain.Client, error)
 	// Returns the persisted client with the specified id.
 	getClientById(id domain.UniqueId) (*domain.Client, error)
+}
+
+type accountRepository interface {
 	// Persists the account.
 	storeAccount(account *domain.Account) error
 	// Returns all the persisted accounts.

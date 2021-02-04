@@ -19,7 +19,7 @@ func NewMoneyFromUsd(usd float32) Money {
 }
 
 // NewMoneyFromCad returns a Money with the amount in Cad.
-func (m *Money) NewMoneyFromCad(cad float32) Money {
+func NewMoneyFromCad(cad float32) Money {
 	return NewMoneyFromUsd(CadToUsdRate * cad)
 }
 

@@ -6,10 +6,10 @@ import (
 )
 
 type service struct {
-	repo repository
+	repo database
 }
 
-func newService(repo repository) *service {
+func newService(repo database) *service {
 	return &service{
 		repo: repo,
 	}
