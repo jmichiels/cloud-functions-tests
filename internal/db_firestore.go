@@ -22,9 +22,9 @@ func newFirestoreDatabase(clt *firestore.Client) *firestoreDatabase {
 	}
 }
 
-func (db *firestoreDatabase) runTransaction(ctx context.Context, f func(tx repositories) error) error {
+func (db *firestoreDatabase) runTransaction(ctx context.Context, f func(ctx context.Context, tx repositories) error) error {
 	return db.clt.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
-		return f(&firestoreDatabase{
+		return f(ctx, &firestoreDatabase{
 			clt: db.clt,
 			tx: &actualFirestoreTransaction{
 				tx: tx,

@@ -15,7 +15,7 @@ type database interface {
 	// Runs a transaction with the database. All the calls to the repositories via the tx argument of the callback
 	// will be made in a single transaction, committed once the callback returns. All reads must happen before any
 	// write operation.
-	runTransaction(context.Context, func(tx repositories) error) error
+	runTransaction(context.Context, func(ctx context.Context, tx repositories) error) error
 }
 
 // Groups all the repositories together.

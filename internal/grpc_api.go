@@ -21,7 +21,7 @@ func newGrpcApi(srv *service) *grpcApi {
 
 // Returns a new bank_v1.BankServiceServer implementation.
 func NewBankServiceServer() bank_v1.BankServiceServer {
-	db := newMockDatabase()
+	db := newFirestoreDatabase(nil) // todo: init firestore client
 	service := newService(db)
 	grpcApi := newGrpcApi(service)
 	return grpcApi
@@ -37,7 +37,7 @@ func (api *grpcApi) CreateClient(ctx context.Context, request *bank_v1.CreateCli
 	if err := client.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api.srv.createClient(client); err != nil {
+	if err := api.srv.createClient(ctx, client); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &bank_v1.CreateClientResponse{
@@ -51,7 +51,7 @@ func (api *grpcApi) CreateClient(ctx context.Context, request *bank_v1.CreateCli
 }
 
 func (api *grpcApi) GetAllClients(ctx context.Context, request *bank_v1.GetAllClientsRequest) (*bank_v1.GetAllClientsResponse, error) {
-	clients, err := api.srv.getAllClients()
+	clients, err := api.srv.getAllClients(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -74,7 +74,7 @@ func (api *grpcApi) GetClientById(ctx context.Context, request *bank_v1.GetClien
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	client, err := api.srv.getClientById(id)
+	client, err := api.srv.getClientById(ctx, id)
 	if err != nil {
 		var code codes.Code
 		if err == errNotFound {
@@ -107,7 +107,7 @@ func (api *grpcApi) CreateAccount(ctx context.Context, request *bank_v1.CreateAc
 	if err := account.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api.srv.createAccount(account); err != nil {
+	if err := api.srv.createAccount(ctx, account); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &bank_v1.CreateAccountResponse{
@@ -120,7 +120,7 @@ func (api *grpcApi) CreateAccount(ctx context.Context, request *bank_v1.CreateAc
 }
 
 func (api *grpcApi) GetAllAccounts(ctx context.Context, request *bank_v1.GetAllAccountsRequest) (*bank_v1.GetAllAccountsResponse, error) {
-	accounts, err := api.srv.getAllAccounts()
+	accounts, err := api.srv.getAllAccounts(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -142,7 +142,7 @@ func (api *grpcApi) GetAccountById(ctx context.Context, request *bank_v1.GetAcco
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	account, err := api.srv.getAccountById(id)
+	account, err := api.srv.getAccountById(ctx, id)
 	if err != nil {
 		var code codes.Code
 		if err == errNotFound {
@@ -170,7 +170,7 @@ func (api *grpcApi) Transfer(ctx context.Context, request *bank_v1.TransferReque
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api.srv.transfer(domain.NewMoneyFromUsd(request.AmountUsd), originAccountId, destinationAccountId); err != nil {
+	if err := api.srv.transfer(ctx, domain.NewMoneyFromUsd(request.AmountUsd), originAccountId, destinationAccountId); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &bank_v1.TransferResponse{}, nil
