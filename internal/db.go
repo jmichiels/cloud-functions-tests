@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"errors"
 	"github.com/jmichiels/cloud-functions-tests/internal/domain"
 )
@@ -9,30 +10,34 @@ import (
 var errNotFound = errors.New("not found")
 
 type database interface {
-	// Starts a transaction with the database.
-	runTransaction(func(tx transaction) error) error
-	transaction
+	// A database groups all the repositories.
+	repositories
+	// Runs a transaction with the database. All the calls to the repositories via the tx argument of the callback
+	// will be made in a single transaction, committed once the callback returns. All reads must happen before any
+	// write operation.
+	runTransaction(context.Context, func(tx repositories) error) error
 }
 
-type transaction interface {
+// Groups all the repositories together.
+type repositories interface {
 	clientRepository
 	accountRepository
 }
 
 type clientRepository interface {
 	// Persists the client.
-	storeClient(client *domain.Client) error
+	storeClient(ctx context.Context, client *domain.Client) error
 	// Returns all the persisted clients.
-	getAllClients() ([]*domain.Client, error)
+	getAllClients(ctx context.Context) ([]*domain.Client, error)
 	// Returns the persisted client with the specified id.
-	getClientById(id domain.UniqueId) (*domain.Client, error)
+	getClientById(ctx context.Context, id domain.UniqueId) (*domain.Client, error)
 }
 
 type accountRepository interface {
 	// Persists the account.
-	storeAccount(account *domain.Account) error
+	storeAccount(ctx context.Context, account *domain.Account) error
 	// Returns all the persisted accounts.
-	getAllAccounts() ([]*domain.Account, error)
+	getAllAccounts(ctx context.Context) ([]*domain.Account, error)
 	// Returns the persisted account with the specified id.
-	getAccountById(id domain.UniqueId) (*domain.Account, error)
+	getAccountById(ctx context.Context, id domain.UniqueId) (*domain.Account, error)
 }

@@ -3,118 +3,82 @@ package internal
 import (
 	"cloud.google.com/go/firestore"
 	"context"
-	"github.com/jmichiels/cloud-functions-tests/internal/domain"
 )
 
+// Implementation of repositories based on firestore.
 type firestoreDatabase struct {
-	firestoreClt *firestore.Client
+	clt *firestore.Client
+
+	// Will be an actualFirestoreTransaction if inside a transaction, or a fakeFirestoreTransaction otherwise.
+	tx firestoreTransaction
 }
 
 func newFirestoreDatabase(clt *firestore.Client) *firestoreDatabase {
 	return &firestoreDatabase{
-		firestoreClt: clt,
+		clt: clt,
+		tx: &fakeFirestoreTransaction{
+			clt: clt,
+		},
 	}
 }
 
-func (db *firestoreDatabase) storeClient(client *domain.Client) error {
-	// todo db.firestoreClt.Doc("")
-	return
-}
-
-func (db *firestoreDatabase) getAllClients() (clients []*domain.Client, err error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
-	return db.clientRepo.getAllClients()
-}
-
-func (db *firestoreDatabase) getClientById(id domain.UniqueId) (*domain.Client, error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
-	return db.clientRepo.getClientById(id)
-}
-
-func (db *firestoreDatabase) storeAccount(account *domain.Account) error {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
-	return db.accountRepo.storeAccount(account)
-}
-
-func (db *firestoreDatabase) getAllAccounts() ([]*domain.Account, error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
-	return db.accountRepo.getAllAccounts()
-}
-
-func (db *firestoreDatabase) getAccountById(id domain.UniqueId) (*domain.Account, error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
-	return db.accountRepo.getAccountById(id)
-}
-
-func (db *firestoreDatabase) runTransaction(f func(tx transaction) error) error {
-	return db.firestoreClt.RunTransaction(context.TODO(), func(ctx context.Context, tx *firestore.Transaction) error {
-		return f(&struct {
-			*firestoreClientRepository
-			*firestoreAccountRepository
-		}{
-			&firestoreClientRepository{tx},
-			&firestoreAccountRepository{tx},
+func (db *firestoreDatabase) runTransaction(ctx context.Context, f func(tx repositories) error) error {
+	return db.clt.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		return f(&firestoreDatabase{
+			clt: db.clt,
+			tx: &actualFirestoreTransaction{
+				tx: tx,
+			},
 		})
 	})
 }
 
-type firestoreClientRepository struct {
-	firestoreTx *firestore.Transaction
+// Implemented by actualFirestoreTransaction and fakeFirestoreTransaction.
+type firestoreTransaction interface {
+	//todo Create(ctx context.Context,dr *firestore.DocumentRef, data interface{}) error
+	//todo Delete(ctx context.Context,dr *firestore.DocumentRef, opts ...firestore.Precondition) error
+	//todo DocumentRefs(ctx context.Context,cr *firestore.CollectionRef) *firestore.DocumentRefIterator
+	Documents(ctx context.Context, q firestore.Queryer) *firestore.DocumentIterator
+	Get(ctx context.Context, dr *firestore.DocumentRef) (*firestore.DocumentSnapshot, error)
+	//todo GetAll(ctx context.Context,drs []*firestore.DocumentRef) ([]*firestore.DocumentSnapshot, error)
+	Set(ctx context.Context, dr *firestore.DocumentRef, data interface{}, opts ...firestore.SetOption) error
+	//todo Update(ctx context.Context,dr *firestore.DocumentRef, data []firestore.Update, opts ...firestore.Precondition) error
 }
 
-func (repo *firestoreClientRepository) storeClient(client *domain.Client) error {
-	repo.firestoreTx.
-		repo.clients[client.Id.String()] = client
-	return nil
+// Implements firestoreTransaction.
+type fakeFirestoreTransaction struct {
+	clt *firestore.Client
 }
 
-func (repo *firestoreClientRepository) getAllClients() ([]*domain.Client, error) {
-	clients := make([]*domain.Client, 0, len(repo.clients))
-	for _, client := range repo.clients {
-		clients = append(clients, client)
+func (fakeTx *fakeFirestoreTransaction) Documents(ctx context.Context, q firestore.Queryer) *firestore.DocumentIterator {
+	if colRef, ok := q.(firestore.CollectionRef); ok {
+		return colRef.Documents(ctx)
 	}
-	return clients, nil
+	return q.(firestore.Query).Documents(ctx)
 }
 
-func (repo *firestoreClientRepository) getClientById(id domain.UniqueId) (*domain.Client, error) {
-	client, ok := repo.clients[id.String()]
-	if !ok {
-		return nil, errNotFound
-	}
-	return client, nil
+func (fakeTx *fakeFirestoreTransaction) Get(ctx context.Context, dr *firestore.DocumentRef) (*firestore.DocumentSnapshot, error) {
+	return dr.Get(ctx)
 }
 
-type firestoreAccountRepository struct {
-	firestoreTx *firestore.Transaction
+func (fakeTx *fakeFirestoreTransaction) Set(ctx context.Context, dr *firestore.DocumentRef, data interface{}, opts ...firestore.SetOption) error {
+	_, err := dr.Set(ctx, data, opts...)
+	return err
 }
 
-func (repo *firestoreAccountRepository) storeAccount(account *domain.Account) error {
-	repo.accounts[account.Id.String()] = account
-	return nil
+// Implements firestoreTransaction.
+type actualFirestoreTransaction struct {
+	tx *firestore.Transaction
 }
 
-func (repo *firestoreAccountRepository) getAllAccounts() ([]*domain.Account, error) {
-	accounts := make([]*domain.Account, 0, len(repo.accounts))
-	for _, account := range repo.accounts {
-		accounts = append(accounts, account)
-	}
-	return accounts, nil
+func (actualTx *actualFirestoreTransaction) Documents(ctx context.Context, q firestore.Queryer) *firestore.DocumentIterator {
+	return actualTx.tx.Documents(q)
 }
 
-func (repo *firestoreAccountRepository) getAccountById(id domain.UniqueId) (*domain.Account, error) {
-	account, ok := repo.accounts[id.String()]
-	if !ok {
-		return nil, errNotFound
-	}
-	return account, nil
+func (actualTx *actualFirestoreTransaction) Get(ctx context.Context, dr *firestore.DocumentRef) (*firestore.DocumentSnapshot, error) {
+	return actualTx.tx.Get(dr)
+}
+
+func (actualTx *actualFirestoreTransaction) Set(ctx context.Context, dr *firestore.DocumentRef, data interface{}, opts ...firestore.SetOption) error {
+	return actualTx.tx.Set(dr, data, opts...)
 }

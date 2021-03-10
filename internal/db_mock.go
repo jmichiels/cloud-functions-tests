@@ -23,7 +23,7 @@ func newMockDatabase() *mockDatabase {
 	}
 }
 
-func (db *mockDatabase) runTransaction(f func(tx transaction) error) error {
+func (db *mockDatabase) runTransaction(f func(tx repositories) error) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 

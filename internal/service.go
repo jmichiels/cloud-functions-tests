@@ -16,7 +16,7 @@ func newService(db database) *service {
 }
 
 func (srv *service) createClient(client *domain.Client) error {
-	return srv.db.runTransaction(func(tx transaction) error {
+	return srv.db.runTransaction(func(tx repositories) error {
 		// Check that the client does not already exists.
 		if _, err := tx.getClientById(client.Id); err != errNotFound {
 			if err == nil {
@@ -37,7 +37,7 @@ func (srv *service) getClientById(id domain.UniqueId) (*domain.Client, error) {
 }
 
 func (srv *service) createAccount(account *domain.Account) error {
-	return srv.db.runTransaction(func(tx transaction) error {
+	return srv.db.runTransaction(func(tx repositories) error {
 		// Check that the account does not already exists.
 		if _, err := tx.getAccountById(account.Id); err != errNotFound {
 			if err == nil {
@@ -66,7 +66,7 @@ func (srv *service) transfer(
 	originAccountId domain.UniqueId,
 	destinationAccountId domain.UniqueId,
 ) error {
-	return srv.db.runTransaction(func(tx transaction) error {
+	return srv.db.runTransaction(func(tx repositories) error {
 		// First step: fetch all the data that we need from the repositories.
 		originAccount, err := tx.getAccountById(originAccountId)
 		if err != nil {
